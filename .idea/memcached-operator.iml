@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="WEB_MODULE" version="4">
+  <component name="Go" enabled="true" />
+  <component name="NewModuleRootManager">
+    <content url="file://$MODULE_DIR$" />
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module" module-name="LC-Inorder" />
+    <orderEntry type="module" module-name="elasticsearch-operator-master" />
+    <orderEntry type="module" module-name="cluster-logging-operator-master" />
+    <orderEntry type="module" module-name="gpu-operator-main" />
+    <orderEntry type="module" module-name="GRPCSamplebyJunie" />
+  </component>
+</module>

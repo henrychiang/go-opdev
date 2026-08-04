@@ -61,9 +61,6 @@ func (r *MemcachedReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	log := log.FromContext(ctx)
 
 	log.Info("Starting reconciliation", "namespace", req.Namespace, "name", req.Name)
-	log.Info("Cloudbuild TEST")
-	log.Info("Cloudbuild COMMIT TEST")
-	log.Info("Cloudbuild COMMIT TEST W/O cloudbuild.yaml")
 	log.Info("Cloudbuild COMMIT TEST W/ cloudbuild.yaml")
 
 	memcached := &cachev1alpha1.Memcached{}

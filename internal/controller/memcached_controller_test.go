@@ -38,7 +38,11 @@ var _ = Describe("Memcached Controller", func() {
 
 		typeNamespacedName := types.NamespacedName{
 			Name:      resourceName,
+<<<<<<< HEAD
 			Namespace: "default",
+=======
+			Namespace: "default", // TODO(user):Modify as needed
+>>>>>>> 75b7ee9545d0fa1562fe2e958a4a6063445d5bbb
 		}
 		memcached := &cachev1alpha1.Memcached{}
 
@@ -51,15 +55,23 @@ var _ = Describe("Memcached Controller", func() {
 						Name:      resourceName,
 						Namespace: "default",
 					},
+<<<<<<< HEAD
 					Spec: cachev1alpha1.MemcachedSpec{
 						Size: 1,
 					},
+=======
+					// TODO(user): Specify other spec details if needed.
+>>>>>>> 75b7ee9545d0fa1562fe2e958a4a6063445d5bbb
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}
 		})
 
 		AfterEach(func() {
+<<<<<<< HEAD
+=======
+			// TODO(user): Cleanup logic after each test, like removing the resource instance.
+>>>>>>> 75b7ee9545d0fa1562fe2e958a4a6063445d5bbb
 			resource := &cachev1alpha1.Memcached{}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
 			Expect(err).NotTo(HaveOccurred())
@@ -78,6 +90,11 @@ var _ = Describe("Memcached Controller", func() {
 				NamespacedName: typeNamespacedName,
 			})
 			Expect(err).NotTo(HaveOccurred())
+<<<<<<< HEAD
+=======
+			// TODO(user): Add more specific assertions depending on your controller's reconciliation logic.
+			// Example: If you expect a certain status condition after reconciliation, verify it here.
+>>>>>>> 75b7ee9545d0fa1562fe2e958a4a6063445d5bbb
 		})
 	})
 })

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # memcached-operator
 // TODO(user): Add simple overview of use/purpose
 
@@ -112,3 +113,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
+=======
+# go-opdev
+An Operator Development PoC, which reconsiles Client-Server (APDB) image deployments on GKE (Enterprise). 
+CloudServiceMesh (Istio, GKE-Managed) is used to monitor their traffics.
+>>>>>>> 75b7ee9545d0fa1562fe2e958a4a6063445d5bbb

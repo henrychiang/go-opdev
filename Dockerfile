@@ -1,5 +1,9 @@
 # Build the manager binary
+<<<<<<< HEAD
 FROM golang:1.24 AS builder
+=======
+FROM golang:1.22 AS builder
+>>>>>>> 75b7ee9545d0fa1562fe2e958a4a6063445d5bbb
 ARG TARGETOS
 ARG TARGETARCH
 
@@ -30,7 +34,10 @@ WORKDIR /
 COPY --from=builder /workspace/manager .
 USER 65532:65532
 
+<<<<<<< HEAD
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
   CMD ["/manager", "--health-probe-bind-address=:8081"]
 
+=======
+>>>>>>> 75b7ee9545d0fa1562fe2e958a4a6063445d5bbb
 ENTRYPOINT ["/manager"]

@@ -79,65 +79,61 @@ func (r *MemcachedReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	// Reconcile App Deployment
 	if memcached.Spec.Installap {
 		dep := GetDeployOfApp(memcached)
-		found := &appsv1.Deployment{}
-		err = r.Get(ctx, types.NamespacedName{Name: dep.Name, Namespace: dep.Namespace}, found)
-		if err != nil && apierrors.IsNotFound(err) {
-			log.Info("Creating a new Deployment for App", deploymentNamespace, dep.Namespace, deploymentName, dep.Name)
-			if err = r.Create(ctx, dep); err != nil {
-				log.Error(err, "Failed to create new Deployment for App", deploymentNamespace, dep.Namespace, deploymentName, dep.Name)
-				return ctrl.Result{}, err
-			}
-		} else if err != nil {
-			log.Error(err, "Failed to get Deployment for App")
+		if err := r.reconcileDeployment(ctx, dep); err != nil {
 			return ctrl.Result{}, err
 		}
 	} else {
-		found := &appsv1.Deployment{}
-		err = r.Get(ctx, types.NamespacedName{Name: "client", Namespace: memcached.Namespace}, found)
-		if err == nil {
-			log.Info("Deleting Deployment for App", deploymentNamespace, found.Namespace, deploymentName, found.Name)
-			if err = r.Delete(ctx, found); err != nil {
-				log.Error(err, "Failed to delete Deployment for App", deploymentNamespace, found.Namespace, deploymentName, found.Name)
-				return ctrl.Result{}, err
-			}
-		} else if !apierrors.IsNotFound(err) {
-			log.Error(err, "Failed to get Deployment for App during deletion")
+		if err := r.deleteDeployment(ctx, "client", memcached.Namespace); err != nil {
 			return ctrl.Result{}, err
 		}
 	}
 
 	// Reconcile Svr Deployment
 	if memcached.Spec.Installdb {
-		dep := GetDeployOfSvr(memcached)
-		found := &appsv1.Deployment{}
-		err = r.Get(ctx, types.NamespacedName{Name: dep.Name, Namespace: dep.Namespace}, found)
-		if err != nil && apierrors.IsNotFound(err) {
-			log.Info("Creating a new Deployment for Server", deploymentNamespace, dep.Namespace, deploymentName, dep.Name)
-			if err = r.Create(ctx, dep); err != nil {
-				log.Error(err, "Failed to create new Deployment for Server", deploymentNamespace, dep.Namespace, deploymentName, dep.Name)
-				return ctrl.Result{}, err
-			}
-		} else if err != nil {
-			log.Error(err, "Failed to get Deployment for Server")
+		dep := GetDeployOfDb(memcached)
+		if err := r.reconcileDeployment(ctx, dep); err != nil {
 			return ctrl.Result{}, err
 		}
 	} else {
-		found := &appsv1.Deployment{}
-		err = r.Get(ctx, types.NamespacedName{Name: "server", Namespace: memcached.Namespace}, found)
-		if err == nil {
-			log.Info("Deleting Deployment for Server", deploymentNamespace, found.Namespace, deploymentName, found.Name)
-			if err = r.Delete(ctx, found); err != nil {
-				log.Error(err, "Failed to delete Deployment for Server", deploymentNamespace, found.Namespace, deploymentName, found.Name)
-				return ctrl.Result{}, err
-			}
-		} else if !apierrors.IsNotFound(err) {
-			log.Error(err, "Failed to get Deployment for Server during deletion")
+		if err := r.deleteDeployment(ctx, "server", memcached.Namespace); err != nil {
 			return ctrl.Result{}, err
 		}
 	}
 
 	log.Info("Finished reconciliation", "namespace", req.Namespace)
 	return ctrl.Result{RequeueAfter: time.Minute}, nil
+}
+
+func (r *MemcachedReconciler) reconcileDeployment(ctx context.Context, dep *appsv1.Deployment) error {
+	found := &appsv1.Deployment{}
+	err := r.Get(ctx, types.NamespacedName{Name: dep.Name, Namespace: dep.Namespace}, found)
+	if err != nil && apierrors.IsNotFound(err) {
+		log.Info("Creating a new Deployment", deploymentNamespace, dep.Namespace, deploymentName, dep.Name)
+		if err = r.Create(ctx, dep); err != nil {
+			log.Error(err, "Failed to create new Deployment", deploymentNamespace, dep.Namespace, deploymentName, dep.Name)
+			return err
+		}
+	} else if err != nil {
+		log.Error(err, "Failed to get Deployment")
+		return err
+	}
+	return nil
+}
+
+func (r *MemcachedReconciler) deleteDeployment(ctx context.Context, name, namespace string) error {
+	found := &appsv1.Deployment{}
+	err := r.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, found)
+	if err == nil {
+		log.Info("Deleting Deployment", deploymentNamespace, found.Namespace, deploymentName, found.Name)
+		if err = r.Delete(ctx, found); err != nil {
+			log.Error(err, "Failed to delete Deployment", deploymentNamespace, found.Namespace, deploymentName, found.Name)
+			return err
+		}
+	} else if !apierrors.IsNotFound(err) {
+		log.Error(err, "Failed to get Deployment during deletion")
+		return err
+	}
+	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -148,9 +144,6 @@ func (r *MemcachedReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func GetDeployOfDb(memcached *cachev1alpha1.Memcached) *appsv1.Deployment {
-
-	//replicas := memcached.Spec.Size * 2
-
 	dep := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "db",
@@ -159,12 +152,10 @@ func GetDeployOfDb(memcached *cachev1alpha1.Memcached) *appsv1.Deployment {
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &memcached.Spec.Size,
 			Selector: &metav1.LabelSelector{
-				//MatchLabels: nil,
 				MatchLabels: map[string]string{"db": "demo-db"},
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					//Labels: nil,
 					Labels: map[string]string{"db": "demo-db"},
 				},
 				Spec: corev1.PodSpec{
@@ -206,7 +197,6 @@ func GetDeployOfDb(memcached *cachev1alpha1.Memcached) *appsv1.Deployment {
 							ContainerPort: 3306,
 							Name:          "tcp",
 						}},
-						//Command: []string{"memcached", "-m=64", "-o", "modern", "-v"},
 					}},
 				},
 			},
@@ -217,9 +207,6 @@ func GetDeployOfDb(memcached *cachev1alpha1.Memcached) *appsv1.Deployment {
 }
 
 func GetDeployOfApp(memcached *cachev1alpha1.Memcached) *appsv1.Deployment {
-
-	//replicas := memcached.Spec.Size * 2
-
 	dep := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "client",
@@ -228,12 +215,10 @@ func GetDeployOfApp(memcached *cachev1alpha1.Memcached) *appsv1.Deployment {
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &memcached.Spec.Size,
 			Selector: &metav1.LabelSelector{
-				//MatchLabels: nil,
 				MatchLabels: map[string]string{"app": "demo-client"},
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					//Labels: nil,
 					Labels: map[string]string{"app": "demo-client"},
 				},
 				Spec: corev1.PodSpec{
@@ -261,7 +246,6 @@ func GetDeployOfApp(memcached *cachev1alpha1.Memcached) *appsv1.Deployment {
 							ContainerPort: 8080,
 							Name:          "http",
 						}},
-						//Command: []string{"memcached", "-m=64", "-o", "modern", "-v"},
 					}},
 				},
 			},
@@ -272,8 +256,6 @@ func GetDeployOfApp(memcached *cachev1alpha1.Memcached) *appsv1.Deployment {
 }
 
 func GetDeployOfSvr(memcached *cachev1alpha1.Memcached) *appsv1.Deployment {
-	//replicas := memcached.Spec.Size * 2
-
 	dep := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "server",
@@ -282,12 +264,10 @@ func GetDeployOfSvr(memcached *cachev1alpha1.Memcached) *appsv1.Deployment {
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &memcached.Spec.Size,
 			Selector: &metav1.LabelSelector{
-				//MatchLabels: nil,
 				MatchLabels: map[string]string{"app": "demo-svr"},
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					//Labels: nil,
 					Labels: map[string]string{"app": "demo-svr"},
 				},
 				Spec: corev1.PodSpec{
@@ -315,7 +295,6 @@ func GetDeployOfSvr(memcached *cachev1alpha1.Memcached) *appsv1.Deployment {
 							ContainerPort: 8080,
 							Name:          "http",
 						}},
-						//Command: []string{"memcached", "-m=64", "-o", "modern", "-v"},
 					}},
 				},
 			},

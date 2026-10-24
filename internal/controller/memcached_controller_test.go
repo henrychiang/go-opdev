@@ -37,12 +37,8 @@ var _ = Describe("Memcached Controller", func() {
 		ctx := context.Background()
 
 		typeNamespacedName := types.NamespacedName{
-			Name: resourceName,
-
+			Name:      resourceName,
 			Namespace: "default",
-
-			Namespace: "default", // TODO(user):Modify as needed
-
 		}
 		memcached := &cachev1alpha1.Memcached{}
 
@@ -55,22 +51,15 @@ var _ = Describe("Memcached Controller", func() {
 						Name:      resourceName,
 						Namespace: "default",
 					},
-
 					Spec: cachev1alpha1.MemcachedSpec{
 						Size: 1,
 					},
-
-					// TODO(user): Specify other spec details if needed.
-
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}
 		})
 
 		AfterEach(func() {
-
-			// TODO(user): Cleanup logic after each test, like removing the resource instance.
-
 			resource := &cachev1alpha1.Memcached{}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
 			Expect(err).NotTo(HaveOccurred())
@@ -78,6 +67,7 @@ var _ = Describe("Memcached Controller", func() {
 			By("Cleanup the specific resource instance Memcached")
 			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
 		})
+
 		It("should successfully reconcile the resource", func() {
 			By("Reconciling the created resource")
 			controllerReconciler := &MemcachedReconciler{
@@ -90,9 +80,51 @@ var _ = Describe("Memcached Controller", func() {
 			})
 			Expect(err).NotTo(HaveOccurred())
 
-			// TODO(user): Add more specific assertions depending on your controller's reconciliation logic.
-			// Example: If you expect a certain status condition after reconciliation, verify it here.
+			// Verify that the deployment for the app is created
+			appDeployment := &appsv1.Deployment{}
+			err = k8sClient.Get(ctx, types.NamespacedName{Name: "client", Namespace: "default"}, appDeployment)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(*appDeployment.Spec.Replicas).To(Equal(int32(1)))
 
+			// Verify that the deployment for the server is created
+			serverDeployment := &appsv1.Deployment{}
+			err = k8sClient.Get(ctx, types.NamespacedName{Name: "server", Namespace: "default"}, serverDeployment)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(*serverDeployment.Spec.Replicas).To(Equal(int32(1)))
+		})
+
+		It("should delete the app deployment when Installap is false", func() {
+			By("Setting Installap to false")
+			memcached.Spec.Installap = false
+			Expect(k8sClient.Update(ctx, memcached)).To(Succeed())
+
+			By("Reconciling the updated resource")
+			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
+				NamespacedName: typeNamespacedName,
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			// Verify that the app deployment is deleted
+			appDeployment := &appsv1.Deployment{}
+			err = k8sClient.Get(ctx, types.NamespacedName{Name: "client", Namespace: "default"}, appDeployment)
+			Expect(apierrors.IsNotFound(err)).To(BeTrue())
+		})
+
+		It("should delete the server deployment when Installdb is false", func() {
+			By("Setting Installdb to false")
+			memcached.Spec.Installdb = false
+			Expect(k8sClient.Update(ctx, memcached)).To(Succeed())
+
+			By("Reconciling the updated resource")
+			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
+				NamespacedName: typeNamespacedName,
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			// Verify that the server deployment is deleted
+			serverDeployment := &appsv1.Deployment{}
+			err = k8sClient.Get(ctx, types.NamespacedName{Name: "server", Namespace: "default"}, serverDeployment)
+			Expect(apierrors.IsNotFound(err)).To(BeTrue())
 		})
 	})
 })

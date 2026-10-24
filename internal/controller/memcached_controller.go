@@ -175,7 +175,7 @@ func GetDeployOfDb(memcached *cachev1alpha1.Memcached) *appsv1.Deployment {
 						},
 					},
 					Containers: []corev1.Container{{
-						Image: "registry.access.redhat.com/rhscl/mysql-80-rhel7",
+						Image: "docker.io/mysql:8.0",
 						Name:  "ccydb",
 						Env: []corev1.EnvVar{
 							{
@@ -244,7 +244,7 @@ func GetDeployOfApp(memcached *cachev1alpha1.Memcached) *appsv1.Deployment {
 						},
 					},
 					Containers: []corev1.Container{{
-						Image:           "registry.access.redhat.com/rhscl/httpd-24-rhel7",
+						Image:           "docker.io/httpd:2.4",
 						Name:            "ccyclient",
 						ImagePullPolicy: corev1.PullIfNotPresent,
 						SecurityContext: &corev1.SecurityContext{
@@ -298,7 +298,7 @@ func GetDeployOfSvr(memcached *cachev1alpha1.Memcached) *appsv1.Deployment {
 						},
 					},
 					Containers: []corev1.Container{{
-						Image:           "registry.access.redhat.com/rhscl/httpd-24-rhel7",
+						Image:           "docker.io/httpd:2.4",
 						Name:            "ccyserver",
 						ImagePullPolicy: corev1.PullIfNotPresent,
 						SecurityContext: &corev1.SecurityContext{

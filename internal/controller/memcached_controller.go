@@ -149,8 +149,6 @@ func (r *MemcachedReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 func GetDeployOfDb(memcached *cachev1alpha1.Memcached) *appsv1.Deployment {
 
-	//replicas := memcached.Spec.Size * 2
-
 	dep := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "db",
@@ -159,12 +157,10 @@ func GetDeployOfDb(memcached *cachev1alpha1.Memcached) *appsv1.Deployment {
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &memcached.Spec.Size,
 			Selector: &metav1.LabelSelector{
-				//MatchLabels: nil,
 				MatchLabels: map[string]string{"db": "demo-db"},
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					//Labels: nil,
 					Labels: map[string]string{"db": "demo-db"},
 				},
 				Spec: corev1.PodSpec{
@@ -175,7 +171,7 @@ func GetDeployOfDb(memcached *cachev1alpha1.Memcached) *appsv1.Deployment {
 						},
 					},
 					Containers: []corev1.Container{{
-						Image: "registry.access.redhat.com/rhscl/mysql-80-rhel7",
+						Image: "mysql:8.0",
 						Name:  "ccydb",
 						Env: []corev1.EnvVar{
 							{
@@ -206,7 +202,6 @@ func GetDeployOfDb(memcached *cachev1alpha1.Memcached) *appsv1.Deployment {
 							ContainerPort: 3306,
 							Name:          "tcp",
 						}},
-						//Command: []string{"memcached", "-m=64", "-o", "modern", "-v"},
 					}},
 				},
 			},
@@ -218,8 +213,6 @@ func GetDeployOfDb(memcached *cachev1alpha1.Memcached) *appsv1.Deployment {
 
 func GetDeployOfApp(memcached *cachev1alpha1.Memcached) *appsv1.Deployment {
 
-	//replicas := memcached.Spec.Size * 2
-
 	dep := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "client",
@@ -228,12 +221,10 @@ func GetDeployOfApp(memcached *cachev1alpha1.Memcached) *appsv1.Deployment {
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &memcached.Spec.Size,
 			Selector: &metav1.LabelSelector{
-				//MatchLabels: nil,
 				MatchLabels: map[string]string{"app": "demo-client"},
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					//Labels: nil,
 					Labels: map[string]string{"app": "demo-client"},
 				},
 				Spec: corev1.PodSpec{
@@ -244,8 +235,8 @@ func GetDeployOfApp(memcached *cachev1alpha1.Memcached) *appsv1.Deployment {
 						},
 					},
 					Containers: []corev1.Container{{
-						Image:           "registry.access.redhat.com/rhscl/httpd-24-rhel7",
-						Name:            "ccyclient",
+						Image: "httpd:2.4",
+						Name:  "ccyclient",
 						ImagePullPolicy: corev1.PullIfNotPresent,
 						SecurityContext: &corev1.SecurityContext{
 							RunAsNonRoot:             &[]bool{true}[0],
@@ -261,7 +252,6 @@ func GetDeployOfApp(memcached *cachev1alpha1.Memcached) *appsv1.Deployment {
 							ContainerPort: 8080,
 							Name:          "http",
 						}},
-						//Command: []string{"memcached", "-m=64", "-o", "modern", "-v"},
 					}},
 				},
 			},
@@ -272,8 +262,6 @@ func GetDeployOfApp(memcached *cachev1alpha1.Memcached) *appsv1.Deployment {
 }
 
 func GetDeployOfSvr(memcached *cachev1alpha1.Memcached) *appsv1.Deployment {
-	//replicas := memcached.Spec.Size * 2
-
 	dep := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "server",
@@ -282,12 +270,10 @@ func GetDeployOfSvr(memcached *cachev1alpha1.Memcached) *appsv1.Deployment {
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &memcached.Spec.Size,
 			Selector: &metav1.LabelSelector{
-				//MatchLabels: nil,
 				MatchLabels: map[string]string{"app": "demo-svr"},
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					//Labels: nil,
 					Labels: map[string]string{"app": "demo-svr"},
 				},
 				Spec: corev1.PodSpec{
@@ -298,8 +284,8 @@ func GetDeployOfSvr(memcached *cachev1alpha1.Memcached) *appsv1.Deployment {
 						},
 					},
 					Containers: []corev1.Container{{
-						Image:           "registry.access.redhat.com/rhscl/httpd-24-rhel7",
-						Name:            "ccyserver",
+						Image: "httpd:2.4",
+						Name:  "ccyserver",
 						ImagePullPolicy: corev1.PullIfNotPresent,
 						SecurityContext: &corev1.SecurityContext{
 							RunAsNonRoot:             &[]bool{true}[0],
@@ -315,7 +301,6 @@ func GetDeployOfSvr(memcached *cachev1alpha1.Memcached) *appsv1.Deployment {
 							ContainerPort: 8080,
 							Name:          "http",
 						}},
-						//Command: []string{"memcached", "-m=64", "-o", "modern", "-v"},
 					}},
 				},
 			},

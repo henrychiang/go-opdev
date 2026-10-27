@@ -37,12 +37,8 @@ var _ = Describe("Memcached Controller", func() {
 		ctx := context.Background()
 
 		typeNamespacedName := types.NamespacedName{
-			Name: resourceName,
-
+			Name:      resourceName,
 			Namespace: "default",
-
-			Namespace: "default", // TODO(user):Modify as needed
-
 		}
 		memcached := &cachev1alpha1.Memcached{}
 
@@ -55,29 +51,23 @@ var _ = Describe("Memcached Controller", func() {
 						Name:      resourceName,
 						Namespace: "default",
 					},
-
 					Spec: cachev1alpha1.MemcachedSpec{
 						Size: 1,
 					},
-
-					// TODO(user): Specify other spec details if needed.
-
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}
 		})
 
 		AfterEach(func() {
-
-			// TODO(user): Cleanup logic after each test, like removing the resource instance.
-
 			resource := &cachev1alpha1.Memcached{}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
-			Expect(err).NotTo(HaveOccurred())
-
-			By("Cleanup the specific resource instance Memcached")
-			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
+			if err == nil {
+				By("Cleanup the specific resource instance Memcached")
+				Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
+			}
 		})
+
 		It("should successfully reconcile the resource", func() {
 			By("Reconciling the created resource")
 			controllerReconciler := &MemcachedReconciler{
@@ -90,9 +80,20 @@ var _ = Describe("Memcached Controller", func() {
 			})
 			Expect(err).NotTo(HaveOccurred())
 
-			// TODO(user): Add more specific assertions depending on your controller's reconciliation logic.
-			// Example: If you expect a certain status condition after reconciliation, verify it here.
+			// Add more specific assertions depending on your controller's reconciliation logic.
+		})
 
+		It("should fail validation if foo is empty", func() {
+			By("Setting foo to empty")
+			memcached.Spec.Foo = ""
+			err := k8sClient.Update(ctx, memcached)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Reconciling the updated resource")
+			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{
+				NamespacedName: typeNamespacedName,
+			})
+			Expect(err).To(HaveOccurred())
 		})
 	})
 })

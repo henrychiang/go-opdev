@@ -104,6 +104,7 @@ func (r *MemcachedReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 }
 
 func (r *MemcachedReconciler) reconcileDeployment(ctx context.Context, dep *appsv1.Deployment) error {
+	log := log.FromContext(ctx)//STUPID-AI
 	found := &appsv1.Deployment{}
 	err := r.Get(ctx, types.NamespacedName{Name: dep.Name, Namespace: dep.Namespace}, found)
 	if err != nil && apierrors.IsNotFound(err) {
@@ -120,6 +121,7 @@ func (r *MemcachedReconciler) reconcileDeployment(ctx context.Context, dep *apps
 }
 
 func (r *MemcachedReconciler) deleteDeployment(ctx context.Context, name, namespace string) error {
+	log := log.FromContext(ctx)//STUPID-AI
 	found := &appsv1.Deployment{}
 	err := r.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, found)
 	if err == nil {

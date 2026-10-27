@@ -37,13 +37,10 @@ var _ = Describe("Memcached Controller", func() {
 		ctx := context.Background()
 
 		typeNamespacedName := types.NamespacedName{
-			Name: resourceName,
-
+			Name:      resourceName,
 			Namespace: "default",
-
-			Namespace: "default", // TODO(user):Modify as needed
-
 		}
+
 		memcached := &cachev1alpha1.Memcached{}
 
 		BeforeEach(func() {
@@ -55,29 +52,23 @@ var _ = Describe("Memcached Controller", func() {
 						Name:      resourceName,
 						Namespace: "default",
 					},
-
 					Spec: cachev1alpha1.MemcachedSpec{
 						Size: 1,
 					},
-
-					// TODO(user): Specify other spec details if needed.
-
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}
 		})
 
 		AfterEach(func() {
-
-			// TODO(user): Cleanup logic after each test, like removing the resource instance.
-
+			By("Cleanup the specific resource instance Memcached")
 			resource := &cachev1alpha1.Memcached{}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
-			Expect(err).NotTo(HaveOccurred())
-
-			By("Cleanup the specific resource instance Memcached")
-			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
+			if err == nil {
+				Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
+			}
 		})
+
 		It("should successfully reconcile the resource", func() {
 			By("Reconciling the created resource")
 			controllerReconciler := &MemcachedReconciler{
@@ -90,9 +81,25 @@ var _ = Describe("Memcached Controller", func() {
 			})
 			Expect(err).NotTo(HaveOccurred())
 
-			// TODO(user): Add more specific assertions depending on your controller's reconciliation logic.
-			// Example: If you expect a certain status condition after reconciliation, verify it here.
+			By("Verifying the App Deployment")
+			appDeployment := &appsv1.Deployment{}
+			err = k8sClient.Get(ctx, types.NamespacedName{Name: "client", Namespace: "default"}, appDeployment)
+			if memcached.Spec.Installap {
+				Expect(err).NotTo(HaveOccurred())
+				Expect(appDeployment.Spec.Replicas).To(Equal(&memcached.Spec.Size))
+			} else {
+				Expect(apierrors.IsNotFound(err)).To(BeTrue())
+			}
 
+			By("Verifying the Svr Deployment")
+			svrDeployment := &appsv1.Deployment{}
+			err = k8sClient.Get(ctx, types.NamespacedName{Name: "server", Namespace: "default"}, svrDeployment)
+			if memcached.Spec.Installdb {
+				Expect(err).NotTo(HaveOccurred())
+				Expect(svrDeployment.Spec.Replicas).To(Equal(&memcached.Spec.Size))
+			} else {
+				Expect(apierrors.IsNotFound(err)).To(BeTrue())
+			}
 		})
 	})
 })

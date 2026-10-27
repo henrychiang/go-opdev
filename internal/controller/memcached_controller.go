@@ -56,16 +56,13 @@ type MemcachedReconciler struct {
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-
 func (r *MemcachedReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 
 	log.Info("Starting reconciliation", "namespace", req.Namespace, "name", req.Name)
-	log.Info("Cloudbuild COMMIT TEST W/ cloudbuild.yaml 1")
 
 	memcached := &cachev1alpha1.Memcached{}
-	err := r.Get(ctx, req.NamespacedName, memcached)
-	if err != nil {
+	if err := r.Get(ctx, req.NamespacedName, memcached); err != nil {
 		if apierrors.IsNotFound(err) {
 			log.Info("Memcached resource not found. Ignoring since object must be deleted")
 			return ctrl.Result{}, nil
@@ -76,68 +73,78 @@ func (r *MemcachedReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 	log.Info("Reconciling Memcached", "namespace", req.Namespace, "size", memcached.Spec.Size, "foo", memcached.Spec.Foo)
 
-	// Reconcile App Deployment
-	if memcached.Spec.Installap {
-		dep := GetDeployOfApp(memcached)
-		found := &appsv1.Deployment{}
-		err = r.Get(ctx, types.NamespacedName{Name: dep.Name, Namespace: dep.Namespace}, found)
-		if err != nil && apierrors.IsNotFound(err) {
-			log.Info("Creating a new Deployment for App", deploymentNamespace, dep.Namespace, deploymentName, dep.Name)
-			if err = r.Create(ctx, dep); err != nil {
-				log.Error(err, "Failed to create new Deployment for App", deploymentNamespace, dep.Namespace, deploymentName, dep.Name)
-				return ctrl.Result{}, err
-			}
-		} else if err != nil {
-			log.Error(err, "Failed to get Deployment for App")
-			return ctrl.Result{}, err
-		}
-	} else {
-		found := &appsv1.Deployment{}
-		err = r.Get(ctx, types.NamespacedName{Name: "client", Namespace: memcached.Namespace}, found)
-		if err == nil {
-			log.Info("Deleting Deployment for App", deploymentNamespace, found.Namespace, deploymentName, found.Name)
-			if err = r.Delete(ctx, found); err != nil {
-				log.Error(err, "Failed to delete Deployment for App", deploymentNamespace, found.Namespace, deploymentName, found.Name)
-				return ctrl.Result{}, err
-			}
-		} else if !apierrors.IsNotFound(err) {
-			log.Error(err, "Failed to get Deployment for App during deletion")
-			return ctrl.Result{}, err
-		}
+	if err := r.reconcileAppDeployment(ctx, memcached); err != nil {
+		return ctrl.Result{}, err
 	}
 
-	// Reconcile Svr Deployment
-	if memcached.Spec.Installdb {
-		dep := GetDeployOfSvr(memcached)
-		found := &appsv1.Deployment{}
-		err = r.Get(ctx, types.NamespacedName{Name: dep.Name, Namespace: dep.Namespace}, found)
-		if err != nil && apierrors.IsNotFound(err) {
-			log.Info("Creating a new Deployment for Server", deploymentNamespace, dep.Namespace, deploymentName, dep.Name)
-			if err = r.Create(ctx, dep); err != nil {
-				log.Error(err, "Failed to create new Deployment for Server", deploymentNamespace, dep.Namespace, deploymentName, dep.Name)
-				return ctrl.Result{}, err
-			}
-		} else if err != nil {
-			log.Error(err, "Failed to get Deployment for Server")
-			return ctrl.Result{}, err
-		}
-	} else {
-		found := &appsv1.Deployment{}
-		err = r.Get(ctx, types.NamespacedName{Name: "server", Namespace: memcached.Namespace}, found)
-		if err == nil {
-			log.Info("Deleting Deployment for Server", deploymentNamespace, found.Namespace, deploymentName, found.Name)
-			if err = r.Delete(ctx, found); err != nil {
-				log.Error(err, "Failed to delete Deployment for Server", deploymentNamespace, found.Namespace, deploymentName, found.Name)
-				return ctrl.Result{}, err
-			}
-		} else if !apierrors.IsNotFound(err) {
-			log.Error(err, "Failed to get Deployment for Server during deletion")
-			return ctrl.Result{}, err
-		}
+	if err := r.reconcileSvrDeployment(ctx, memcached); err != nil {
+		return ctrl.Result{}, err
 	}
 
 	log.Info("Finished reconciliation", "namespace", req.Namespace)
 	return ctrl.Result{RequeueAfter: time.Minute}, nil
+}
+
+func (r *MemcachedReconciler) reconcileAppDeployment(ctx context.Context, memcached *cachev1alpha1.Memcached) error {
+	if !memcached.Spec.Installap {
+		return r.deleteDeployment(ctx, "client", memcached.Namespace)
+	}
+
+	dep := GetDeployOfApp(memcached)
+	found := &appsv1.Deployment{}
+	if err := r.Get(ctx, types.NamespacedName{Name: dep.Name, Namespace: dep.Namespace}, found); err != nil {
+		if apierrors.IsNotFound(err) {
+			log.Info("Creating a new Deployment for App", deploymentNamespace, dep.Namespace, deploymentName, dep.Name)
+			if err := r.Create(ctx, dep); err != nil {
+				log.Error(err, "Failed to create new Deployment for App", deploymentNamespace, dep.Namespace, deploymentName, dep.Name)
+				return err
+			}
+		} else {
+			log.Error(err, "Failed to get Deployment for App")
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *MemcachedReconciler) reconcileSvrDeployment(ctx context.Context, memcached *cachev1alpha1.Memcached) error {
+	if !memcached.Spec.Installdb {
+		return r.deleteDeployment(ctx, "server", memcached.Namespace)
+	}
+
+	dep := GetDeployOfSvr(memcached)
+	found := &appsv1.Deployment{}
+	if err := r.Get(ctx, types.NamespacedName{Name: dep.Name, Namespace: dep.Namespace}, found); err != nil {
+		if apierrors.IsNotFound(err) {
+			log.Info("Creating a new Deployment for Server", deploymentNamespace, dep.Namespace, deploymentName, dep.Name)
+			if err := r.Create(ctx, dep); err != nil {
+				log.Error(err, "Failed to create new Deployment for Server", deploymentNamespace, dep.Namespace, deploymentName, dep.Name)
+				return err
+			}
+		} else {
+			log.Error(err, "Failed to get Deployment for Server")
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *MemcachedReconciler) deleteDeployment(ctx context.Context, name, namespace string) error {
+	found := &appsv1.Deployment{}
+	if err := r.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, found); err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+		log.Error(err, "Failed to get Deployment for deletion")
+		return err
+	}
+
+	log.Info("Deleting Deployment", deploymentNamespace, found.Namespace, deploymentName, found.Name)
+	if err := r.Delete(ctx, found); err != nil {
+		log.Error(err, "Failed to delete Deployment", deploymentNamespace, found.Namespace, deploymentName, found.Name)
+		return err
+	}
+	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.

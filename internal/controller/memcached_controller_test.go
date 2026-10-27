@@ -92,5 +92,41 @@ var _ = Describe("Memcached Controller", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(*svrDeployment.Spec.Replicas).To(Equal(int32(1)))
 		})
+
+		It("should handle the case where Installap is false", func() {
+			By("Setting Installap to false")
+			memcached.Spec.Installap = false
+			err := k8sClient.Update(ctx, memcached)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Reconciling the updated resource")
+			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{
+				NamespacedName: typeNamespacedName,
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			// Verify that the Deployment for App is deleted
+			appDeployment := &appsv1.Deployment{}
+			err = k8sClient.Get(ctx, types.NamespacedName{Name: "client", Namespace: "default"}, appDeployment)
+			Expect(apierrors.IsNotFound(err)).To(BeTrue())
+		})
+
+		It("should handle the case where Installdb is false", func() {
+			By("Setting Installdb to false")
+			memcached.Spec.Installdb = false
+			err := k8sClient.Update(ctx, memcached)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Reconciling the updated resource")
+			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{
+				NamespacedName: typeNamespacedName,
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			// Verify that the Deployment for Svr is deleted
+			svrDeployment := &appsv1.Deployment{}
+			err = k8sClient.Get(ctx, types.NamespacedName{Name: "server", Namespace: "default"}, svrDeployment)
+			Expect(apierrors.IsNotFound(err)).To(BeTrue())
+		})
 	})
 })

@@ -165,7 +165,7 @@ func GetDeployOfApp(memcached *cachev1alpha1.Memcached) *appsv1.Deployment {
 						},
 					},
 					Containers: []corev1.Container{{
-						Image:           "registry.access.redhat.com/rhscl/httpd-24-rhel7",
+						Image:           "quay.io/bitnami/nginx:1.21.3",
 						Name:            "ccyclient",
 						ImagePullPolicy: corev1.PullIfNotPresent,
 						SecurityContext: &corev1.SecurityContext{
@@ -214,7 +214,7 @@ func GetDeployOfSvr(memcached *cachev1alpha1.Memcached) *appsv1.Deployment {
 						},
 					},
 					Containers: []corev1.Container{{
-						Image:           "registry.access.redhat.com/rhscl/httpd-24-rhel7",
+						Image:           "quay.io/bitnami/nginx:1.21.3",
 						Name:            "ccyserver",
 						ImagePullPolicy: corev1.PullIfNotPresent,
 						SecurityContext: &corev1.SecurityContext{
